@@ -1,0 +1,26 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: santogrill
+      POSTGRES_PASSWORD: santogrill
+      POSTGRES_DB: santogrill
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U santogrill']
+      interval: 5s
+      retries: 10
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://santogrill:santogrill@db:5432/santogrill?schema=public
+    ports: ['4000:4000']
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

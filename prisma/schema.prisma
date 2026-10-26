@@ -1,0 +1,215 @@
+// Prisma + PostgreSQL. Migraciones y acceso a datos viven SOLO en este repo.
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Rol {
+  ADMIN
+  VENTAS
+}
+
+enum EstadoPedido {
+  RECIBIDO
+  EN_PREPARACION
+  DESPACHADO
+  ENTREGADO
+  ANULADO
+}
+
+enum EtapaEvento {
+  COTIZACION_RECIBIDA
+  CONTACTADO
+  PROPUESTA_ENVIADA
+  CONFIRMADO
+  PERDIDO
+}
+
+enum EstadoMensaje {
+  NUEVO
+  LEIDO
+  RESPONDIDO
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nombre       String
+  passwordHash String
+  rol          Rol      @default(VENTAS)
+  activo       Boolean  @default(true)
+  ultimoAcceso DateTime?
+  creadoEn     DateTime @default(now())
+
+  auditorias Auditoria[]
+}
+
+model Producto {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  nombre      String
+  descripcion String?
+  categoria   String
+  precio      Int      // CLP, entero: nunca float para dinero
+  imagen      String?
+  activo      Boolean  @default(true)
+  stock       Int?     // null = sin control de stock
+  creadoEn    DateTime @default(now())
+  actualizado DateTime @updatedAt
+
+  items PedidoItem[]
+
+  @@index([categoria, activo])
+}
+
+model Suscriptor {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  nombre     String
+  telefono   String?
+  visitanteId String?
+  activo     Boolean  @default(true)
+  creadoEn   DateTime @default(now())
+
+  pedidos Pedido[]
+}
+
+model Pedido {
+  id           String       @id @default(cuid())
+  numero       String       @unique          // SG-XXXXXX, visible al cliente
+  claveIdem    String?      @unique          // Idempotency-Key: evita pedidos duplicados
+  estado       EstadoPedido @default(RECIBIDO)
+  clienteNombre String
+  clienteEmail  String?
+  clienteFono   String
+  direccion     String?
+  comuna        String?
+  suscriptorId  String?
+  visitanteId   String?
+  subtotal      Int
+  descuento     Int          @default(0)
+  envio         Int          @default(0)
+  total         Int
+  notas         String?
+  creadoEn      DateTime     @default(now())
+  actualizado   DateTime     @updatedAt
+
+  suscriptor Suscriptor?  @relation(fields: [suscriptorId], references: [id])
+  items      PedidoItem[]
+
+  @@index([estado, creadoEn])
+}
+
+model PedidoItem {
+  id             String @id @default(cuid())
+  pedidoId       String
+  productoId     String
+  nombreProducto String // snapshot: el precio y nombre del día del pedido
+  precioUnitario Int
+  cantidad       Int
+
+  pedido   Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto Producto @relation(fields: [productoId], references: [id])
+
+  @@index([pedidoId])
+}
+
+model Evento {
+  id          String      @id @default(cuid())
+  codigo      String      @unique // EV-XXXXXX
+  nombre      String
+  email       String?
+  telefono    String?
+  fechaEvento DateTime?
+  lugar       String?
+  personas    Int?
+  servicio    String
+  detalle     String?
+  etapa       EtapaEvento @default(COTIZACION_RECIBIDA)
+  valorEstimado Int?
+  creadoEn    DateTime    @default(now())
+  actualizado DateTime    @updatedAt
+
+  @@index([etapa, creadoEn])
+}
+
+model Mensaje {
+  id        String        @id @default(cuid())
+  codigo    String        @unique
+  nombre    String
+  email     String
+  texto     String
+  estado    EstadoMensaje @default(NUEVO)
+  creadoEn  DateTime      @default(now())
+
+  @@index([estado, creadoEn])
+}
+
+model Visita {
+  id          String   @id @default(cuid())
+  visitanteId String
+  pagina      String
+  origen      String?
+  pantalla    String?
+  idioma      String?
+  userAgent   String?
+  ipHash      String?  // hash, nunca la IP en claro
+  creadoEn    DateTime @default(now())
+
+  @@index([visitanteId])
+  @@index([creadoEn])
+}
+
+model Auditoria {
+  id        String   @id @default(cuid())
+  usuarioId String?
+  accion    String
+  entidad   String
+  entidadId String
+  datos     Json?
+  creadoEn  DateTime @default(now())
+
+  usuario Usuario? @relation(fields: [usuarioId], references: [id])
+
+  @@index([entidad, entidadId])
+}
+
+model Banner {
+  id       String   @id @default(cuid())
+  orden    Int
+  src      String
+  alt      String
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+}
+
+model GaleriaFoto {
+  id       String   @id @default(cuid())
+  src      String
+  alt      String
+  orden    Int
+  grande   Boolean  @default(false)
+  activo   Boolean  @default(true)
+  creadoEn DateTime @default(now())
+}
+
+model Reserva {
+  id         String   @id @default(cuid())
+  codigo     String   @unique         // RS-XXXXXX
+  tipo       String                   // ASADO, PICOTEO, etc.
+  fecha      DateTime
+  horaInicio String
+  horaFin    String
+  servicio   String?
+  nombre     String
+  telefono   String?
+  notas      String?
+  estado     String   @default("PENDIENTE")
+  creadoEn   DateTime @default(now())
+
+  @@index([fecha, estado])
+}
