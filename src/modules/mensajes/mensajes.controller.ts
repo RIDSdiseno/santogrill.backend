@@ -50,7 +50,7 @@ mensajesRouter.patch(
   autorizar('ADMIN', 'VENTAS'),
   validate(estadoSchema),
   asyncHandler(async (req, res) => {
-    const data = await prisma.mensaje.update({ where: { id: req.params.id! }, data: { estado: req.body.estado } });
+    const data = await prisma.mensaje.update({ where: { id: String(req.params.id) }, data: { estado: req.body.estado as import('@prisma/client').EstadoMensaje } });
     res.json({ data });
   })
 );

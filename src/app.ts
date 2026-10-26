@@ -17,7 +17,8 @@ export function crearApp() {
   app.set('trust proxy', 1);
 
   app.use(requestId);
-  app.use(pinoHttp({ logger, customProps: (_req, res) => ({ requestId: res.getHeader('x-request-id') }) }));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  app.use((pinoHttp as any)({ logger }));
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(cors({ origin: env.corsOrigins, credentials: true }));
   app.use(express.json({ limit: '100kb' }));

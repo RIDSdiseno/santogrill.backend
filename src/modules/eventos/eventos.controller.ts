@@ -67,13 +67,13 @@ eventosRouter.patch(
   autorizar('ADMIN', 'VENTAS'),
   validate(etapaSchema),
   asyncHandler(async (req, res) => {
-    const id = req.params.id!;
+    const id = String(req.params.id);
     const data = await prisma.evento.update({
       where: { id },
-      data: { etapa: req.body.etapa, valorEstimado: req.body.valorEstimado ?? undefined }
+      data: { etapa: req.body.etapa as import('@prisma/client').EtapaEvento, valorEstimado: req.body.valorEstimado ?? undefined }
     });
     await auditoriaService.registrar({
-      usuarioId: req.usuario!.sub, accion: 'EVENTO_ETAPA', entidad: 'Evento', entidadId: id, datos: { etapa: req.body.etapa }
+      usuarioId: req.usuario!.sub, accion: 'EVENTO_ETAPA', entidad: 'Evento', entidadId: id, datos: { etapa: String(req.body.etapa) }
     });
     res.json({ data });
   })

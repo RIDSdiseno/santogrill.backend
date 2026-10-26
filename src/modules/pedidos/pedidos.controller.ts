@@ -37,7 +37,7 @@ pedidosRouter.patch(
   autorizar('ADMIN', 'VENTAS'),
   validate(cambiarEstadoSchema),
   asyncHandler(async (req, res) => {
-    const actualizado = await pedidosService.cambiarEstado(req.params.id!, req.body.estado, req.usuario!.sub);
+    const actualizado = await pedidosService.cambiarEstado(String(req.params.id), req.body.estado, req.usuario!.sub);
     res.json({ data: actualizado });
   })
 );
