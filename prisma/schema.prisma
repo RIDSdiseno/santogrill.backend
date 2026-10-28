@@ -179,12 +179,17 @@ model Auditoria {
 }
 
 model Banner {
-  id       String   @id @default(cuid())
-  orden    Int
-  src      String
-  alt      String
-  activo   Boolean  @default(true)
-  creadoEn DateTime @default(now())
+  id        String   @id @default(cuid())
+  seccion   String   @default("general") // 'tienda' | 'eventos' | 'general'
+  orden     Int
+  src       String
+  alt       String
+  titulo    String?
+  subtitulo String?
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
+
+  @@index([seccion, activo, orden])
 }
 
 model GaleriaFoto {
